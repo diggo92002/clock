@@ -1,0 +1,14 @@
+{
+  "name": "待機時鐘與跑馬燈",
+  "short_name": "待機時鐘",
+  "description": "全螢幕時鐘與自訂文字跑馬燈",
+  "lang": "zh-TW",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#08090c",
+  "theme_color": "#08090c",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

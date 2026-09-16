@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080b12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="待機時鐘">
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <title>全螢幕時鐘與跑馬燈</title>
+  <style>
+    :root { color-scheme: dark; --background: radial-gradient(ellipse at center, #25171d 0%, #100f14 52%, #08090c 100%); --clock: #ff625d; --clock-glow: #ff625d33; --panel: #17151be8; --panel-border: #ffffff1c; --control: #302d36; --accent: #ff8a7d; }
+    body[data-theme="amber"] { --background: radial-gradient(ellipse at center, #2a1c0b 0%, #15120d 52%, #090907 100%); --clock: #ffb347; --clock-glow: #ffb34738; --panel: #1d1810e8; --control: #373024; --accent: #ffd08b; }
+    body[data-theme="mint"] { --background: radial-gradient(ellipse at center, #102a22 0%, #0d1715 52%, #070a09 100%); --clock: #76e5bd; --clock-glow: #76e5bd36; --panel: #101b18e8; --control: #263530; --accent: #a4f1d2; }
+    body[data-theme="ocean"] { --background: radial-gradient(ellipse at center, #102738 0%, #0c141d 52%, #07090c 100%); --clock: #78c8ff; --clock-glow: #78c8ff36; --panel: #101822e8; --control: #263342; --accent: #a9dcff; }
+    body[data-theme="violet"] { --background: radial-gradient(ellipse at center, #251535 0%, #15101c 52%, #09070c 100%); --clock: #c49aff; --clock-glow: #c49aff38; --panel: #191321e8; --control: #322a40; --accent: #dbc1ff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100dvh; background: var(--background); color: #fff7f5; font-family: system-ui, -apple-system, "Noto Sans TC", sans-serif; overflow: hidden; }
+    .stage { height: 100dvh; width: 100vw; display: grid; place-items: center; }
+    #display { width: 100%; padding: 3vh 4vw; text-align: center; color: var(--clock); text-shadow: 0 0 .28em var(--clock-glow); font-weight: 750; line-height: .86; letter-spacing: -.075em; font-variant-numeric: tabular-nums; font-size: clamp(5rem, 28vw, 22rem); white-space: nowrap; }
+    #ampm { display: inline-block; margin-left: .18em; font-size: .18em; font-weight: 700; letter-spacing: -.03em; vertical-align: .18em; }
+    .marquee-wrap { width: 100%; overflow: hidden; }
+    #display.marquee { display: inline-block; width: max-content; min-width: 100%; padding: 0 10vw; animation: scroll var(--duration, 10s) linear infinite; }
+    @keyframes scroll { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
+    .controls { position: fixed; z-index: 2; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(92vw, 560px); padding: 12px; border: 1px solid var(--panel-border); border-radius: 18px; background: var(--panel); backdrop-filter: blur(12px); box-shadow: 0 10px 30px #0008; transition: opacity .2s, transform .2s; }
+    .controls.hidden { opacity: 0; pointer-events: none; transform: translate(-50%, 20px); }
+    .tabs, .row { display: flex; gap: 8px; }
+    .row { margin-top: 9px; }
+    .palette { display: flex; align-items: center; gap: 9px; margin-top: 10px; }
+    .palette-label { margin-right: auto; color: #cbbec0; font-size: .8rem; }
+    .swatch { flex: 0 0 27px; width: 27px; min-height: 27px; padding: 0; border: 2px solid transparent; border-radius: 50%; background: var(--swatch); box-shadow: inset 0 0 0 1px #0004; }
+    .swatch.active { border-color: #fff; transform: scale(1.1); }
+    .swatch[data-theme="red"] { --swatch: #ff625d; }
+    .swatch[data-theme="amber"] { --swatch: #ffb347; }
+    .swatch[data-theme="mint"] { --swatch: #76e5bd; }
+    .swatch[data-theme="ocean"] { --swatch: #78c8ff; }
+    .swatch[data-theme="violet"] { --swatch: #c49aff; }
+    button, input { min-height: 42px; border-radius: 11px; border: 1px solid #ffffff22; font: inherit; }
+    button { flex: 1; color: #f6e7e5; background: var(--control); font-weight: 700; cursor: pointer; }
+    button.active { color: #351012; background: var(--accent); }
+    input { min-width: 0; flex: 1; padding: 0 12px; color: #fff5f2; background: #141217; outline: none; }
+    #speed { flex: 0 0 66px; }
+    .hint { position: fixed; top: max(16px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); color: #b8c7df; font-size: .8rem; opacity: .75; text-align: center; }
+    .tap-hint { position: fixed; right: 14px; bottom: 12px; color: #ffffff55; font-size: .7rem; }
+    @media (orientation: portrait) { .hint::after { content: "　建議橫向使用"; } }
+  </style>
+</head>
+<body>
+  <main class="stage"><div class="marquee-wrap"><div id="display" aria-live="polite"></div></div></main>
+  <div class="hint">點一下畫面可隱藏控制列</div>
+  <section class="controls" id="controls">
+    <div class="tabs">
+      <button class="active" data-mode="clock">時鐘</button>
+      <button data-mode="marquee">跑馬燈</button>
+      <button id="fullscreen" title="全螢幕">全螢幕</button>
+    </div>
+    <div class="row" id="marqueeOptions" hidden>
+      <input id="message" type="text" maxlength="100" placeholder="輸入要顯示的文字" value="歡迎光臨">
+      <input id="speed" type="number" min="3" max="60" value="10" title="秒數">
+    </div>
+    <div class="palette" aria-label="選擇顏色主題">
+      <span class="palette-label">顏色主題</span>
+      <button class="swatch active" data-theme="red" aria-label="待機紅"></button>
+      <button class="swatch" data-theme="amber" aria-label="琥珀橘"></button>
+      <button class="swatch" data-theme="mint" aria-label="薄荷綠"></button>
+      <button class="swatch" data-theme="ocean" aria-label="海洋藍"></button>
+      <button class="swatch" data-theme="violet" aria-label="紫光"></button>
+    </div>
+  </section>
+  <div class="tap-hint">點畫面顯示／隱藏選單</div>
+  <script>
+    const display = document.querySelector('#display');
+    const controls = document.querySelector('#controls');
+    const message = document.querySelector('#message');
+    const speed = document.querySelector('#speed');
+    const marqueeOptions = document.querySelector('#marqueeOptions');
+    let mode = 'clock';
+
+    function renderClock() {
+      if (mode !== 'clock') return;
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat('zh-TW', { hour: 'numeric', minute: '2-digit', hour12: true }).formatToParts(now);
+      const period = parts.find(part => part.type === 'dayPeriod')?.value || '';
+      const clock = parts.filter(part => part.type !== 'dayPeriod').map(part => part.value).join('').trim();
+      display.innerHTML = `${clock}<span id="ampm">${period}</span>`;
+    }
+    function renderMarquee() {
+      display.classList.remove('marquee');
+      void display.offsetWidth;
+      display.textContent = message.value.trim() || '請輸入文字';
+      display.style.setProperty('--duration', `${Math.max(3, Math.min(60, Number(speed.value) || 10))}s`);
+      display.classList.add('marquee');
+    }
+    function setMode(next) {
+      mode = next;
+      document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+      marqueeOptions.hidden = mode !== 'marquee';
+      display.classList.toggle('marquee', mode === 'marquee');
+      mode === 'clock' ? renderClock() : renderMarquee();
+    }
+    document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', e => { e.stopPropagation(); setMode(button.dataset.mode); }));
+    function setTheme(theme) {
+      document.body.dataset.theme = theme === 'red' ? '' : theme;
+      document.querySelectorAll('.swatch').forEach(button => button.classList.toggle('active', button.dataset.theme === theme));
+      localStorage.setItem('standby-theme', theme);
+    }
+    document.querySelectorAll('.swatch').forEach(button => button.addEventListener('click', e => { e.stopPropagation(); setTheme(button.dataset.theme); }));
+    [message, speed].forEach(el => el.addEventListener('input', renderMarquee));
+    document.querySelector('#fullscreen').addEventListener('click', async e => {
+      e.stopPropagation();
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+      else await document.exitFullscreen?.();
+    });
+    document.addEventListener('click', e => { if (!e.target.closest('.controls')) controls.classList.toggle('hidden'); });
+    setTheme(localStorage.getItem('standby-theme') || 'red');
+    renderClock(); setInterval(renderClock, 250);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+  </script>
+</body>
+</html>
