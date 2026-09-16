@@ -50,12 +50,11 @@
 </head>
 <body>
   <main class="stage"><div class="marquee-wrap"><div id="display" aria-live="polite"></div></div></main>
-  <div class="hint">點一下畫面可隱藏控制列</div>
+  <div class="hint"></div>
   <section class="controls" id="controls">
     <div class="tabs">
       <button class="active" data-mode="clock">時鐘</button>
       <button data-mode="marquee">跑馬燈</button>
-      <button id="fullscreen" title="全螢幕">全螢幕</button>
     </div>
     <div class="row" id="marqueeOptions" hidden>
       <input id="message" type="text" maxlength="100" placeholder="輸入要顯示的文字" value="歡迎光臨">
@@ -70,7 +69,7 @@
       <button class="swatch" data-theme="violet" aria-label="紫光"></button>
     </div>
   </section>
-  <div class="tap-hint">點畫面顯示／隱藏選單</div>
+  <div class="tap-hint"></div>
   <script>
     const display = document.querySelector('#display');
     const controls = document.querySelector('#controls');
@@ -109,11 +108,6 @@
     }
     document.querySelectorAll('.swatch').forEach(button => button.addEventListener('click', e => { e.stopPropagation(); setTheme(button.dataset.theme); }));
     [message, speed].forEach(el => el.addEventListener('input', renderMarquee));
-    document.querySelector('#fullscreen').addEventListener('click', async e => {
-      e.stopPropagation();
-      if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
-      else await document.exitFullscreen?.();
-    });
     document.addEventListener('click', e => { if (!e.target.closest('.controls')) controls.classList.toggle('hidden'); });
     setTheme(localStorage.getItem('standby-theme') || 'red');
     renderClock(); setInterval(renderClock, 250);
